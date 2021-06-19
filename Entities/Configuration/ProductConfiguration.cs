@@ -15,12 +15,14 @@ namespace Entities.Configuration
             new Product
             {
                 Id = Guid.NewGuid(),
-                Name = "Spruce GOST 26002-83 1-4 22x150x4000"
+                Name = "Spruce GOST 26002-83 1-4 22x150x4000",
+                Unit = "m3",
             },
             new Product
             {
                 Id = Guid.NewGuid(),
-                Name = "Spruce GUST 26002-83 5 22x150x4000"
+                Name = "Spruce GOST 26002-83 5 22x150x4000",
+                Unit = "m3",
             }
             );
         }

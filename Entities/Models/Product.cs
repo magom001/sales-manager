@@ -9,5 +9,7 @@ namespace Entities.Models
         
         [Required(ErrorMessage = "Product name cannot be empty")]
         public string Name { get; set; }
+
+        public string Unit { get; set; } = "m3";
     }
 }
