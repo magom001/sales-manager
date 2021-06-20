@@ -6,6 +6,8 @@ namespace Contracts
     {
         IProductRepository Product { get; }
 
+        IUserRepository User { get; }
+
         Task SaveAsync();
         void Save();
     }

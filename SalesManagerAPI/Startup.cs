@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using SalesManagerAPI.Auth;
 using SalesManagerAPI.Extensions;
 
 namespace SalesManagerAPI
@@ -24,6 +25,7 @@ namespace SalesManagerAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services.AddAuthentication(options => {
                     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,6 +47,7 @@ namespace SalesManagerAPI
             services.ConfigureDbContext(Configuration);
             services.ConfigureRepositoryManager();
             services.AddAutoMapper(typeof(Startup));
+            services.AddScoped<IAuthenticationManager, AuthenticationManager>();
 
             services.AddControllersWithViews();
 

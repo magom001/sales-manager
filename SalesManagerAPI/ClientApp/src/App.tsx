@@ -26,7 +26,8 @@ import { ThemeProvider } from '@emotion/react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { ProductsPage } from './pages';
 import { Spinner } from './components/Spinner/Spinner';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
+import { checkAuth } from './services/auth';
 
 const Dashboard = () => <div>dashboard</div>;
 
@@ -120,73 +121,90 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const AppContent = () => {
   const [open, toggleDrawer] = React.useReducer((v) => !v, false);
 
-  return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar position="absolute" open={open}>
-        <Toolbar
-          sx={{
-            pr: '24px', // keep right padding when drawer closed
-          }}
-        >
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="open drawer"
-            onClick={toggleDrawer}
+  const authQuery = useQuery('whoami', checkAuth, {
+    suspense: false,
+    refetchOnWindowFocus: true,
+  });
+
+  switch (authQuery.status) {
+    case 'loading':
+      return <Spinner />;
+
+    case 'error':
+      return <div>Show login page</div>;
+
+    case 'success':
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <AppBar position="absolute" open={open}>
+            <Toolbar
+              sx={{
+                pr: '24px', // keep right padding when drawer closed
+              }}
+            >
+              <IconButton
+                edge="start"
+                color="inherit"
+                aria-label="open drawer"
+                onClick={toggleDrawer}
+                sx={{
+                  marginRight: '36px',
+                  ...(open && { display: 'none' }),
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
+                Sales Manager
+              </Typography>
+            </Toolbar>
+          </AppBar>
+          <Drawer variant="permanent" open={open}>
+            <Toolbar
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                px: [1],
+              }}
+            >
+              <IconButton onClick={toggleDrawer}>
+                <ChevronLeftIcon />
+              </IconButton>
+            </Toolbar>
+            <Divider />
+            <List>{mainListItems}</List>
+          </Drawer>
+          <Box
+            component="main"
             sx={{
-              marginRight: '36px',
-              ...(open && { display: 'none' }),
+              backgroundColor: (theme) =>
+                theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
+              flexGrow: 1,
+              height: '100vh',
+              overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
-            Sales Manager
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Drawer variant="permanent" open={open}>
-        <Toolbar
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            px: [1],
-          }}
-        >
-          <IconButton onClick={toggleDrawer}>
-            <ChevronLeftIcon />
-          </IconButton>
-        </Toolbar>
-        <Divider />
-        <List>{mainListItems}</List>
-      </Drawer>
-      <Box
-        component="main"
-        sx={{
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
-          flexGrow: 1,
-          height: '100vh',
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Toolbar />
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Paper sx={{ flexGrow: 1, padding: 2 }}>
-            <React.Suspense fallback={<Spinner />}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/products/*" element={<ProductsPage />} />
-              </Routes>
-            </React.Suspense>
-          </Paper>
-        </Container>
-      </Box>
-    </Box>
-  );
+            <Toolbar />
+            <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ flexGrow: 1, padding: 2 }}>
+                <React.Suspense fallback={<Spinner />}>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/products/*" element={<ProductsPage />} />
+                  </Routes>
+                </React.Suspense>
+              </Paper>
+            </Container>
+          </Box>
+        </Box>
+      );
+
+    default:
+      return <div>Unexpected status</div>;
+  }
 };
 
 const theme = createTheme({

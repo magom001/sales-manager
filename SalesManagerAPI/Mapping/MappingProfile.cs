@@ -4,11 +4,12 @@ using Entities.Models;
 
 namespace SalesManagerAPI.Mapping
 {
-    public class MappingProfile: Profile
+    public class MappingProfile : Profile
     {
         public MappingProfile()
         {
             CreateMap<Product, ProductDto>();
+            CreateMap<User, UserDto>();
         }
     }
 }

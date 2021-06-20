@@ -9,23 +9,16 @@ namespace Repository
         private RepositoryContext _repositoryContext;
 
         private IProductRepository _productRepository;
+        private IUserRepository _userRepository;
 
         public RepositoryManager(RepositoryContext repositoryContext)
         {
             _repositoryContext = repositoryContext;
         }
 
-        public IProductRepository Product
-        {
-            get
-            {
-                if (_productRepository == null){
-                    _productRepository = new ProductRepository(_repositoryContext);
-                }
+        public IProductRepository Product => _productRepository ??= new ProductRepository(_repositoryContext);
 
-                return _productRepository;
-            }
-        }
+        public IUserRepository User => _userRepository ??= new UserRepository(_repositoryContext);
 
         public Task SaveAsync() => _repositoryContext.SaveChangesAsync();
 

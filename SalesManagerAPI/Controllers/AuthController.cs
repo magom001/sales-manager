@@ -1,58 +1,88 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text;
+using System.Threading.Tasks;
+using AutoMapper;
+using Contracts;
+using Entities.DataTransferObjects;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
-namespace invoicelog.Controllers
+namespace SalesManagerAPI.Controllers
 {
-    public class LoginModel
-    {
-        public string UserName { get; set; }
-
-        public string Password { get; set; }
-    }
-
+    [Authorize]
     [ApiController]
     [Route("api/v{version:ApiVersion}/auth")]
     [ApiVersion("1.0")]
     public class AuthController : ControllerBase
     {
-        public AuthController(IConfiguration configuration)
+        private readonly IRepositoryManager _repository;
+        private readonly IConfiguration _configuration;
+        private readonly IAuthenticationManager _authManager;
+        private readonly IMapper _mapper;
+
+        public AuthController(IConfiguration configuration, IRepositoryManager repository, IAuthenticationManager authManager, IMapper mapper)
         {
-            Configuration = configuration;
+            _configuration = configuration;
+            _repository = repository;
+            _authManager = authManager;
+            _mapper = mapper;
         }
 
-        private IConfiguration Configuration { get; }
-
-        private readonly string _hashedPassword = BCrypt.Net.BCrypt.HashPassword("test");
-
-        [HttpPost, Route("login")]
-        public IActionResult Login([FromBody] LoginModel user)
+        [HttpGet, Route("whoami")]
+        public IActionResult WhoAmI([FromHeader] string authorization)
         {
-            if (user == null)
-            {
-                return BadRequest("Invalid credentials");
+            if (AuthenticationHeaderValue.TryParse(authorization, out var headerValue)){
+                var tokenString = headerValue.Parameter;
+
+                var token = new JwtSecurityTokenHandler().ReadJwtToken(tokenString);
+
+                var nameClaim = token.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name);
+
+                if (nameClaim == null){
+                    return StatusCode(500);
+                }
+
+                var user = _repository.User.FindByUsername(nameClaim.Value);
+
+                if (user == null){
+                    return StatusCode(500);
+                }
+
+                var userDto = _mapper.Map<UserDto>(user);
+
+                return Ok(userDto);
             }
 
-            if (user.UserName != "test" || !BCrypt.Net.BCrypt.Verify(user.Password, _hashedPassword)) return Unauthorized();
+            return StatusCode(500);
+        }
 
-            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Auth:Secret"]));
-            var signingCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+        [AllowAnonymous]
+        [HttpPost, Route("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto loginData)
+        {
+            var authResponseDto = await _authManager.Authenticate(loginData);
 
-            var tokenOptions = new JwtSecurityToken(
-            claims: new List<Claim>(),
-            expires: DateTime.Now.AddMinutes(5),
-            signingCredentials: signingCredentials
-            );
+            if (authResponseDto == null){
+                return Unauthorized();
+            }
 
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+            return Ok(authResponseDto.AuthTokensDto);
+        }
 
-            return Ok(new { Token = tokenString });
+        [AllowAnonymous]
+        [HttpPost, Route("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto refreshTokenDto)
+        {
+            var tokens = await _authManager.RefreshTokens(refreshTokenDto.RefreshToken);
 
+            if (tokens == null){
+                return Unauthorized();
+            }
+
+            return Ok(tokens);
         }
     }
 }

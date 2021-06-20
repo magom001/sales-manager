@@ -15,10 +15,7 @@ const ProductsPage = () => {
 
   return (
     <Grid container spacing={2} style={{ minHeight: '100%' }}>
-      <Grid item xs={4}>
-        Left pane
-      </Grid>
-      <Grid item xs={8} style={{ position: 'relative' }}>
+      <Grid item xs={12} style={{ position: 'relative' }}>
         <DataGrid
           error={productsQuery.error}
           loading={productsQuery.isLoading}
