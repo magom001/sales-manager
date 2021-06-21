@@ -14,12 +14,23 @@ export const checkAuth = async () => {
   return data;
 };
 
-interface TokensDto {
+export interface TokensDto {
   accessToken: string;
   refreshToken: string;
 }
 export const refreshTokens = async (refreshToken: string) => {
   const { data } = await axios.post<TokensDto>('/api/v1/auth/refresh', { refreshToken });
+
+  return data;
+};
+
+export interface LoginDto {
+  username: string;
+  poassword: string;
+}
+
+export const login = async (loginDto: LoginDto) => {
+  const { data } = await axiosInstance.post<TokensDto>('/auth/login', loginDto);
 
   return data;
 };

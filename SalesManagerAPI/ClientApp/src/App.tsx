@@ -24,7 +24,7 @@ import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import MenuIcon from '@material-ui/icons/Menu';
 import { ThemeProvider } from '@emotion/react';
 import { NavLink, Route, Routes } from 'react-router-dom';
-import { ProductsPage } from './pages';
+import { LoginPage, ProductsPage } from './pages';
 import { Spinner } from './components/Spinner/Spinner';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 import { checkAuth } from './services/auth';
@@ -123,7 +123,6 @@ const AppContent = () => {
 
   const authQuery = useQuery('whoami', checkAuth, {
     suspense: false,
-    refetchOnWindowFocus: true,
   });
 
   switch (authQuery.status) {
@@ -131,7 +130,7 @@ const AppContent = () => {
       return <Spinner />;
 
     case 'error':
-      return <div>Show login page</div>;
+      return <LoginPage />;
 
     case 'success':
       return (
@@ -228,7 +227,9 @@ export default () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <React.Suspense fallback={<Spinner />}>
+          <AppContent />
+        </React.Suspense>
       </QueryClientProvider>
     </ThemeProvider>
   );

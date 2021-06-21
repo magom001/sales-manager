@@ -13,7 +13,7 @@ interface IAuthTokens {
   refreshToken: Token;
 }
 
-const setAuthTokens = (tokens: IAuthTokens): void => {
+export const setAuthTokens = (tokens: IAuthTokens): void => {
   localStorage.setItem(ACCESS_KEY_LS_KEY, tokens.accessToken);
   localStorage.setItem(REFRESH_KEY_LS_KEY, tokens.refreshToken);
 };
@@ -62,6 +62,8 @@ export const applyAuthTokenInterceptor = (axios: AxiosInstance, config: IAuthTok
         console.error('applyAuthTokenInterceptor:error', error);
         declineQueue(error);
         clearAuthTokens();
+
+        throw error;
       } finally {
         isRefreshing = false;
       }
