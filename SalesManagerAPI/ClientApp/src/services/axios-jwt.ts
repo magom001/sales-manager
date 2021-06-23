@@ -4,45 +4,53 @@
 import { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { refreshTokens } from './auth';
 
-const ACCESS_KEY_LS_KEY = 'accessToken';
-const REFRESH_KEY_LS_KEY = 'refreshToken';
-
 type Token = string;
 interface IAuthTokens {
   accessToken: Token;
   refreshToken: Token;
 }
+interface ITokensStorage {
+  saveTokens(tokens:IAuthTokens):Promise<void>;
+  clearTokens():Promise<void>;
+  getAccessToken():Promise<Token>;
+  getRefreshToken():Promise<Token>;
+}
+
+const ACCESS_KEY_LS_KEY = 'accessToken';
+const REFRESH_KEY_LS_KEY = 'refreshToken';
+
+class LocalStorageTokensStorage implements ITokensStorage {
+  private static ACCESS_KEY_LS_KEY = 'accessToken';
+  private static REFRESH_KEY_LS_KEY = 'refreshToken';
+
+  async saveTokens(tokens: IAuthTokens): Promise<void> {
+    localStorage.setItem(ACCESS_KEY_LS_KEY, tokens.accessToken);
+    localStorage.setItem(REFRESH_KEY_LS_KEY, tokens.refreshToken);
+  }
+
+  async clearTokens(): Promise<void> {
+    localStorage.removeItem(ACCESS_KEY_LS_KEY);
+    localStorage.removeItem(REFRESH_KEY_LS_KEY);
+  }
+
+  async getAccessToken(): Promise<string> {
+    return localStorage.getItem(LocalStorageTokensStorage.ACCESS_KEY_LS_KEY);
+  }
+
+  async getRefreshToken(): Promise<string> {
+   return localStorage.getItem(LocalStorageTokensStorage.REFRESH_KEY_LS_KEY);
+  }
+
+}
+
+const tokensStorage = new LocalStorageTokensStorage();
+
 
 export const setAuthTokens = (tokens: IAuthTokens): void => {
   localStorage.setItem(ACCESS_KEY_LS_KEY, tokens.accessToken);
   localStorage.setItem(REFRESH_KEY_LS_KEY, tokens.refreshToken);
 };
 
-/**
- * Clears both tokens
- */
-const clearAuthTokens = (): void => {
-  localStorage.removeItem(ACCESS_KEY_LS_KEY);
-  localStorage.removeItem(REFRESH_KEY_LS_KEY);
-};
-
-/**
- * Returns the stored refresh token
- * @returns {string} Refresh token
- */
-const getRefreshToken = (): Token | undefined => {
-  const tokens = getAuthTokens();
-  return tokens ? tokens.refreshToken : undefined;
-};
-
-/**
- * Returns the stored access token
- * @returns {string} Access token
- */
-const getAccessToken = (): Token | undefined => {
-  const tokens = getAuthTokens();
-  return tokens ? tokens.accessToken : undefined;
-};
 
 export const applyAuthTokenInterceptor = (axios: AxiosInstance, config: IAuthTokenInterceptorConfig): void => {
   if (!axios.interceptors) throw new Error(`invalid axios instance: ${axios}`);
@@ -51,9 +59,14 @@ export const applyAuthTokenInterceptor = (axios: AxiosInstance, config: IAuthTok
     if (e.response?.status === 401) {
       try {
         isRefreshing = true;
-        const tokens = await refreshTokens(getRefreshToken());
+        const refreshToken = await tokensStorage.getRefreshToken();
+        if(!refreshToken) {
+          throw e;
+        }
 
-        setAuthTokens(tokens);
+        const tokens = await refreshTokens(refreshToken);
+
+        await tokensStorage.saveTokens(tokens);
 
         resolveQueue(tokens.accessToken);
 
@@ -61,7 +74,8 @@ export const applyAuthTokenInterceptor = (axios: AxiosInstance, config: IAuthTok
       } catch (error) {
         console.error('applyAuthTokenInterceptor:error', error);
         declineQueue(error);
-        clearAuthTokens();
+
+        await tokensStorage.clearTokens();
 
         throw error;
       } finally {
@@ -71,13 +85,6 @@ export const applyAuthTokenInterceptor = (axios: AxiosInstance, config: IAuthTok
       return e;
     }
   });
-};
-
-const getAuthTokens = (): IAuthTokens | undefined => {
-  const accessToken = localStorage.getItem(ACCESS_KEY_LS_KEY);
-  const refreshToken = localStorage.getItem(REFRESH_KEY_LS_KEY);
-
-  return { accessToken, refreshToken };
 };
 
 interface IAuthTokenInterceptorConfig {
@@ -99,7 +106,7 @@ const authTokenInterceptor =
         .catch(Promise.reject);
     }
 
-    const accessToken = getAccessToken();
+    const accessToken = await tokensStorage.getAccessToken();
 
     requestConfig.headers[header] = `${headerPrefix} ${accessToken}`;
 
