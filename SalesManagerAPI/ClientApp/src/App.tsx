@@ -28,6 +28,7 @@ import { LoginPage, ProductsPage } from './pages';
 import { Spinner } from './components/Spinner/Spinner';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 import { checkAuth } from './services/auth';
+import { useProducts } from './pages/products/hooks';
 
 const Dashboard = () => <div>dashboard</div>;
 
@@ -124,6 +125,8 @@ const AppContent = () => {
   const authQuery = useQuery('whoami', checkAuth, {
     suspense: false,
   });
+
+  const p = useProducts();
 
   switch (authQuery.status) {
     case 'loading':

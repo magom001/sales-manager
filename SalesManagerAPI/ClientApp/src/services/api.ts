@@ -1,6 +1,10 @@
 import axios from 'axios';
-import { applyAuthTokenInterceptor } from './axios-jwt';
+
+import { applyInterceptors } from 'axios-jwt-auth';
+import { refreshTokens } from './auth';
 
 export const axiosInstance = axios.create({ baseURL: '/api/v1' });
 
-applyAuthTokenInterceptor(axiosInstance, {});
+applyInterceptors(axiosInstance, {
+  refreshTokens: (token) => refreshTokens(token),
+});
