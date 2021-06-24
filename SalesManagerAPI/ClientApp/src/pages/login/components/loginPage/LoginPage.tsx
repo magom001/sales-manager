@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Box from '@material-ui/core/Box';
@@ -6,20 +6,15 @@ import Typography from '@material-ui/core/Typography';
 import Container from '@material-ui/core/Container';
 import { LoginDto } from '../../../../services/auth';
 import { useLoginMutation } from '../../hooks';
-import { useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 
 const LoginPage = () => {
   const mutation = useLoginMutation();
+  const { register, handleSubmit, formState } = useForm<LoginDto>();
 
-  const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const data = new FormData(event.currentTarget);
-
-      // @ts-ignore
-      const loginDto: LoginDto = Object.fromEntries(data.entries);
-
-      mutation.mutate(loginDto);
+  const onSubmit = useCallback(
+    (data: LoginDto) => {
+      mutation.mutate(data);
     },
     [mutation],
   );
@@ -37,26 +32,30 @@ const LoginPage = () => {
         <Typography component="h1" variant="h5">
           Login
         </Typography>
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1 }}>
           <TextField
+            {...register('username', { required: "Username is required" })}
             margin="normal"
             required
             fullWidth
             id="username"
             label="Username"
-            name="username"
             autoFocus
             autoComplete="off"
+            error={Boolean(formState.errors['username'])}
+            helperText={formState.errors['username']?.message}
           />
           <TextField
+            {...register('password', { required: "Password is required" })}
             margin="normal"
             required
             fullWidth
-            name="password"
             label="Password"
             type="password"
             id="password"
             autoComplete="off"
+            error={Boolean(formState.errors['password'])}
+            helperText={formState.errors['password']?.message}
           />
           <Button
             disabled={mutation.isLoading}

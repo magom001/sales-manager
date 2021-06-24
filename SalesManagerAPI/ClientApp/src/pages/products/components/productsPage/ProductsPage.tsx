@@ -17,7 +17,7 @@ const ProductsPage = () => {
     <Grid container spacing={2} style={{ minHeight: '100%' }}>
       <Grid item xs={12} style={{ position: 'relative' }}>
         <DataGrid
-          error={productsQuery.error}
+          error={productsQuery.error ? true : undefined}
           loading={productsQuery.isLoading}
           onEditCellChangeCommitted={(params) => {
             console.log('params', params);

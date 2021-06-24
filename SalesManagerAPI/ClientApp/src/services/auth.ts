@@ -26,7 +26,7 @@ export const refreshTokens = async (refreshToken: string) => {
 
 export interface LoginDto {
   username: string;
-  poassword: string;
+  password: string;
 }
 
 export const login = async (loginDto: LoginDto) => {
